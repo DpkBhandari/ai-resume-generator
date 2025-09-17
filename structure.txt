@@ -1,0 +1,37 @@
+ai-resume-generator/
+│
+├── client/                # React + Tailwind (Frontend)
+│   ├── public/            # Static assets
+│   ├── src/
+│   │   ├── assets/        # Images, icons, fonts
+│   │   ├── components/    # Reusable UI components (Buttons, Inputs, Modals)
+│   │   ├── pages/         # Page-level components (Home, Dashboard, ResumeEditor)
+│   │   ├── layouts/       # Common layouts (Navbar, Sidebar, AuthLayout)
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── context/       # Context API (AuthContext, ThemeContext, ResumeContext)
+│   │   ├── utils/         # Helper functions (validators, formatters)
+│   │   ├── services/      # API calls (resumeAPI.js, authAPI.js)
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   └── package.json
+│
+├── server/                # Node.js + Express (Backend)
+│   ├── src/
+│   │   ├── config/        # DB config, env setup
+│   │   ├── controllers/   # Request handlers (authController, resumeController)
+│   │   ├── models/        # MongoDB models (User, Resume)
+│   │   ├── routes/        # API routes (authRoutes, resumeRoutes)
+│   │   ├── middleware/    # JWT auth, error handling, rate limiting
+│   │   ├── services/      # Business logic (AI service, PDF generation)
+│   │   ├── utils/         # Helper functions (validators, token utils)
+│   │   └── server.js      # Express app entry
+│   ├── .env.example       # Example env variables
+│   └── package.json
+│
+├── docs/                  # Documentation (README assets, API docs)
+│   └── screenshots/       # Screenshots/GIFs for README
+│
+├── .gitignore
+├── README.md
+├── package.json           # For monorepo scripts (optional, if you use npm workspaces/turbo)
+└── LICENSE
