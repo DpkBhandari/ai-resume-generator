@@ -3,13 +3,18 @@ import Joi from "joi";
 // ✅ Register Validator
 export const registerValidator = Joi.object(
   {
-    name: Joi.string().alphanum().min(3).max(30).required().messages({
-      "string.base": "Name should be a text",
-      "string.empty": "Name cannot be empty",
-      "string.min": "Name must be at least 3 characters",
-      "string.max": "Name must be at most 30 characters",
-      "any.required": "Name is required",
-    }),
+    name: Joi.string()
+      .pattern(/^[a-zA-Z ]+$/)
+      .min(3)
+      .max(30)
+      .required()
+      .messages({
+        "string.base": "Name should be a text",
+        "string.empty": "Name cannot be empty",
+        "string.min": "Name must be at least 3 characters",
+        "string.max": "Name must be at most 30 characters",
+        "any.required": "Name is required",
+      }),
     email: Joi.string()
       .email({
         minDomainSegments: 2,

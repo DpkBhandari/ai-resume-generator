@@ -1,21 +1,26 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-
+const secret = config.jwt_secret;
 export function authenticate(req, res, next) {
   try {
-    // You can also check req.cookies.token if you set it in cookies
-    const token = req.headers.authorization?.split(" ")[1];
+    const token =
+      req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
     if (!token) {
       return res
         .status(401)
         .json({ message: "Unauthorized, no token provided" });
     }
 
-    const decoded = jwt.verify(token, config.jwt_secret);
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Token expired. Refresh required." });
+    }
+    return res.status(401).json({ message: "Invalid token" });
   }
 }
 
