@@ -1,18 +1,25 @@
-import jwt from "jsonwebtoken";
-import config from "../config/config.js";
-
 import User from "../models/user.model.js";
 import {
   registerValidator,
+  forgotPasswordValidator,
   loginValidator,
+  resetPasswordValidator,
 } from "../validators/user.validator.js";
 
-import { hashPassword, comparePassword } from "../services/user.auth.js";
 import {
   generateToken,
   generateRefreshToken,
 } from "../services/auth.service.js";
+
+import crypto from "crypto";
+
+import { hashPassword, comparePassword } from "../services/user.auth.js";
+
 import { sendResponse } from "../utils/sendResponse.js";
+
+import { sendMail } from "../config/mail.config.js";
+
+// User Registeration
 
 export async function registerUser(req, res, next) {
   try {
@@ -32,13 +39,33 @@ export async function registerUser(req, res, next) {
 
     // Hash Password
     const hashedPassword = await hashPassword(password);
+    // Verifiaction Code Generation
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
 
-    // Db Entry
+    const hashVerificationCode = await hashPassword(verificationCode);
+
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
+      verificationCode: hashVerificationCode,
+      verificationCodeExpires: Date.now() + 15 * 60 * 1000, // 15 minutes
     });
+
+    // sending mail
+
+    try {
+      await sendMail(newUser.email, verificationCode);
+    } catch (mailErr) {
+      console.error("❌ Failed to send verification email:", mailErr);
+
+      await User.findByIdAndDelete(newUser._id);
+
+      return res.status(500).json({
+        status: 500,
+        message: "Registration failed: could not send verification email",
+      });
+    }
 
     // Response
     return sendResponse(res, 201, "User registered successfully", {
@@ -51,6 +78,7 @@ export async function registerUser(req, res, next) {
 }
 
 // Login user
+
 export async function loginUser(req, res, next) {
   try {
     // Validation
@@ -65,6 +93,16 @@ export async function loginUser(req, res, next) {
     const user = await User.findOne({ email });
     if (!user) {
       return sendResponse(res, 400, "User does not exist");
+    }
+
+    if (!req.body.password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    if (!user.password) {
+      return res
+        .status(500)
+        .json({ message: "User password is missing in DB" });
     }
 
     // Compare password
@@ -98,45 +136,119 @@ export async function loginUser(req, res, next) {
   }
 }
 
-// Log-out User
+// Verifying Mail
 
-export function logoutUser(req, res, next) {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  return sendResponse(res, 200, "Logout successfully");
-}
-
-// Refresh Token Controller
-export function refreshTokenUser(req, res) {
+export async function verifyMail(req, res, next) {
   try {
-    const oldRefreshToken = req.cookies.refreshToken;
-    if (!oldRefreshToken) {
-      return sendResponse(res, 401, "No refresh token provided");
+    const { email, code } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return sendResponse(res, 404, "User not found");
+
+    if (user.verificationCodeExpires < Date.now()) {
+      return sendResponse(res, 400, "OTP expired");
     }
 
-    jwt.verify(oldRefreshToken, config.jwt_secret, async (err, decoded) => {
-      if (err) {
-        return sendResponse(res, 403, "Invalid or expired refresh token");
-      }
+    const isMatchedOtp = await comparePassword(code, user.verificationCode);
 
-      const user = await User.findById(decoded.id);
-      if (!user) {
-        return sendResponse(res, 404, "User not found");
-      }
+    if (!isMatchedOtp) {
+      return sendResponse(res, 400, "Invalid or expired verification code");
+    }
 
-      const newAccessToken = generateToken(user);
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
 
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000, // 15 min
+    return sendResponse(res, 200, "Email verified successfully");
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Forgot Password
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const { value, error } = forgotPasswordValidator.validate(req.body);
+
+    if (error) {
+      return sendResponse(res, 400, "Invalid email format");
+    }
+
+    const { email } = value;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return sendResponse(res, 404, "User doesn't exist");
+    }
+    // Generating verificationCode And Sending Via Email
+
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+    const hashVerificationCode = await hashPassword(verificationCode);
+
+    try {
+      await sendMail(user.email, verificationCode);
+    } catch (mailErr) {
+      console.error("❌ Failed to send verification email:", mailErr);
+
+      // await User.findByIdAndDelete(newUser._id);
+
+      return res.status(500).json({
+        status: 500,
+        message: "Failed to send verification email",
       });
+    }
 
-      return sendResponse(res, 200, "New access token issued", {
-        newAccessToken,
-      });
+    user.verificationCode = hashVerificationCode;
+    user.verificationCodeExpires = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+
+    return sendResponse(res, 200, "Verification Code on Registered Email", {
+      email,
     });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Reset Password
+
+export async function resetPassword(req, res, next) {
+  try {
+    const { value, error } = resetPasswordValidator.validate(req.body);
+
+    if (error) {
+      return sendResponse(res, 400, error.details[0].message);
+    }
+
+    const { email, code, newPassword } = value;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return sendResponse(res, 404, "User doesn't exist");
+    }
+
+    if (!user.verificationCode || user.verificationCodeExpires < Date.now()) {
+      return sendResponse(res, 400, "OTP expired or invalid");
+    }
+
+    const validateOtp = await comparePassword(code, user.verificationCode);
+
+    if (!validateOtp) {
+      return sendResponse(res, 400, "Invalid OTP");
+    }
+
+    user.password = await hashPassword(newPassword);
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+
+    await user.save();
+
+    return sendResponse(res, 201, "Password updated successfully");
   } catch (err) {
     return next(err);
   }

@@ -1,15 +1,30 @@
 import express from "express";
-const userRoutes = express.Router();
 import {
   registerUser,
   loginUser,
+  verifyMail,
+  forgotPassword,
+  resetPassword,
+} from "../controllers/user.controllers.js";
+import {
   logoutUser,
   refreshTokenUser,
-} from "../controllers/user.controllers.js";
-userRoutes.post("/register", registerUser);
+  resendOtp,
+} from "../controllers/user.auth.controllers.js";
+import { authenticate } from "../middlewares/authorization.js";
 
+const userRoutes = express.Router();
+
+// Public Routes (No authentication needed)
+userRoutes.post("/register", registerUser);
 userRoutes.post("/login", loginUser);
-userRoutes.post("/logout", logoutUser);
-userRoutes.post("/refresh", refreshTokenUser);
+userRoutes.post("/verify-email", verifyMail);
+userRoutes.post("/resendmail", resendOtp);
+userRoutes.post("/forgot-password", forgotPassword);
+userRoutes.patch("/reset-password", resetPassword);
+
+// Protected Routes (Authentication required)
+userRoutes.post("/logout", authenticate, logoutUser);
+userRoutes.post("/refresh", authenticate, refreshTokenUser);
 
 export default userRoutes;

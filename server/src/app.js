@@ -2,40 +2,55 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import cors from "cors";
-import globalErrorHandler from "./middlewares/globalErrorHandler.js";
-import userRoutes from "./routes/user.routes.js";
-import { authenticate } from "./middlewares/authorization.js";
 import cookieParser from "cookie-parser";
+import userRoutes from "./routes/user.routes.js";
+import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 
 const app = express();
 
-app.use(helmet());
-app.use(morgan("dev"));
-app.use(cors());
+// ✅ Security
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
+
+// ✅ Logging (dev only)
+if (process.env.PHASE === "development") {
+  app.use(morgan("dev"));
+}
+
+// ✅ CORS Configuration
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    credentials: true,
+  })
+);
+
+// ✅ Body Parsers
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 
-app.use(express.json({ limit: "10kb" }));
-
-// Routes
+// ✅ API Routes
 app.use("/api/v1/users", userRoutes);
 
-app.get("/hello", authenticate, (req, res) => {
-  res.send("<h1>Premium Route</h1>");
-});
+// ✅ Home Route
+app.get("/", (req, res) =>
+  res.json({ status: "success", message: "Server is running" })
+);
 
-app.get("/", (req, res) => {
-  res.send("<h1>Server Started ....</h1>");
-});
-
-// ❌ 404 handler should come AFTER routes
-app.use((req, res, next) => {
+// ❌ 404 Handler
+app.use((req, res) => {
   res.status(404).json({
-    status: 404,
-    error: "Route not found",
+    status: "fail",
+    message: "Route not found",
   });
 });
 
-// Global Error Handler
+// ✅ Global Error Handler
 app.use(globalErrorHandler);
 
 export default app;

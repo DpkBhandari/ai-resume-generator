@@ -16,14 +16,13 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      select: false,
     },
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    emailExriry: {
-      type: String,
-    },
+
+    isVerified: { type: Boolean, default: false },
+    verificationCode: String, // store OTP
+    verificationCodeExpires: Date,
+
     role: {
       type: String,
       default: "user",

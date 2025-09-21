@@ -5,14 +5,22 @@ function globalErrorHandler(error, req, res, next) {
   const statusCode = error.status || 500;
   const errMsg = error.message || "Internal Server Error";
 
-  res.status(statusCode).json({
+  console.error(`[${new Date().toISOString()}] Error: ${errMsg}`);
+  if (phase.toLowerCase() === "development") {
+    console.error(error.stack);
+  }
+
+  const payload = {
     status: statusCode,
     error: errMsg,
-    stack:
-      phase.toLowerCase() === "development"
-        ? error.stack
-        : "Something went wrong. Please try again later.",
-  });
+  };
+
+  if (phase.toLowerCase() === "development") {
+    payload.stack = error.stack;
+    payload.name = error.name;
+  }
+
+  res.status(statusCode).json(payload);
 }
 
 export default globalErrorHandler;
