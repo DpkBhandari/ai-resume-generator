@@ -6,13 +6,16 @@ import crypto from "crypto";
 
 import User from "../models/user.model.js";
 
-import { sendMail } from "../config/mail.config.js";
+import { sendOtpMail } from "../config/mail.config.js";
 
 import { generateToken } from "../services/auth.service.js";
 
 import { sendResponse } from "../utils/sendResponse.js";
 
-// Log-out User
+import { resendOtpValidator } from "../validators/user.validator.js";
+
+import { hashPassword } from "../services/user.auth.js";
+// Log-out User ✅
 
 export function logoutUser(req, res, next) {
   res.clearCookie("accessToken");
@@ -20,7 +23,7 @@ export function logoutUser(req, res, next) {
   return sendResponse(res, 200, "Logout successfully");
 }
 
-// Refresh Token Controller
+// Refresh Token Controller ✅
 
 export async function refreshTokenUser(req, res, next) {
   try {
@@ -56,30 +59,32 @@ export async function refreshTokenUser(req, res, next) {
   }
 }
 
-// Resend Otp
-
+// Resend Otp 🚫
 export async function resendOtp(req, res) {
-  const { email } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user) {
-    return sendResponse(res, 404, "User not found");
-  }
-
   try {
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    const { value, error } = resendOtpValidator.validate(req.body);
+    if (error) return sendResponse(res, 400, "Invalid email");
 
+    const { email } = value;
+    const user = await User.findOne({ email });
+    if (!user) return sendResponse(res, 404, "User not found");
+
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
     const hashVerificationCode = await hashPassword(verificationCode);
 
+    console.log(`Otp : ${verificationCode}`);
+    console.log(`Hash-Otp : ${hashVerificationCode}`);
+
     user.verificationCode = hashVerificationCode;
-    user.verificationCodeExpires = Date.now() + 15 * 60 * 1000; // 15 min expiry
+    user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    // Send OTP
-    await sendMail(user.email, verificationCode);
+    // ✅ Pass the correct code
+    await sendOtpMail(user.email, verificationCode, "resendOtp");
 
     return sendResponse(res, 200, "OTP sent successfully!");
   } catch (err) {
+    console.error("Resend OTP error:", err); // Log the actual error
     return sendResponse(res, 500, "Failed to resend OTP");
   }
 }

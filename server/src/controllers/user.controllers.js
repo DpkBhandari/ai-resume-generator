@@ -17,9 +17,9 @@ import { hashPassword, comparePassword } from "../services/user.auth.js";
 
 import { sendResponse } from "../utils/sendResponse.js";
 
-import { sendMail } from "../config/mail.config.js";
+import { sendOtpMail } from "../config/mail.config.js";
 
-// User Registeration
+// User Registeration ✅
 
 export async function registerUser(req, res, next) {
   try {
@@ -55,7 +55,7 @@ export async function registerUser(req, res, next) {
     // sending mail
 
     try {
-      await sendMail(newUser.email, verificationCode);
+      await sendOtpMail(newUser.email, verificationCode, "register");
     } catch (mailErr) {
       console.error("❌ Failed to send verification email:", mailErr);
 
@@ -77,66 +77,57 @@ export async function registerUser(req, res, next) {
   }
 }
 
-// Login user
+// Login user ✅
 
 export async function loginUser(req, res, next) {
   try {
-    // Validation
+    // 1️⃣ Validate input
     const { value, error } = loginValidator.validate(req.body);
-    if (error) {
-      return sendResponse(res, 400, error.details[0].message);
-    }
+
+    if (error) return sendResponse(res, 400, error.details[0].message);
 
     const { email, password } = value;
 
-    // Db Search
-    const user = await User.findOne({ email });
-    if (!user) {
-      return sendResponse(res, 400, "User does not exist");
-    }
+    // 2️⃣ Fetch user including password and role
+    const user = await User.findOne({ email }).select("+password role email");
 
-    if (!req.body.password) {
-      return res.status(400).json({ message: "Password is required" });
-    }
+    if (!user) return sendResponse(res, 400, "User does not exist");
 
-    if (!user.password) {
-      return res
-        .status(500)
-        .json({ message: "User password is missing in DB" });
-    }
+    if (!user.password)
+      return sendResponse(res, 500, "User password is missing in DB");
 
-    // Compare password
+    // 3️⃣ Compare password
+
     const isMatched = await comparePassword(password, user.password);
-    if (!isMatched) {
-      return sendResponse(res, 401, "Invalid credentials");
-    }
 
-    // Generate tokens
+    if (!isMatched) return sendResponse(res, 401, "Invalid credentials");
+
+    // 4️⃣ Generate tokens using fresh DB data
     const accessToken = generateToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // Set cookies
+    // 5️⃣ Set cookies
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 min
+      secure: false, //process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // 6️⃣ Return response including role if needed
     return sendResponse(res, 200, "User login successful");
   } catch (err) {
     return next(err);
   }
 }
-
-// Verifying Mail
+// Verifying Mail ✅
 
 export async function verifyMail(req, res, next) {
   try {
@@ -166,7 +157,7 @@ export async function verifyMail(req, res, next) {
   }
 }
 
-// Forgot Password
+// Forgot Password ✅
 
 export async function forgotPassword(req, res, next) {
   try {
@@ -189,7 +180,7 @@ export async function forgotPassword(req, res, next) {
     const hashVerificationCode = await hashPassword(verificationCode);
 
     try {
-      await sendMail(user.email, verificationCode);
+      await sendOtpMail(user.email, verificationCode, "forgotPassword");
     } catch (mailErr) {
       console.error("❌ Failed to send verification email:", mailErr);
 
@@ -214,7 +205,7 @@ export async function forgotPassword(req, res, next) {
   }
 }
 
-// Reset Password
+// Reset Password ✅
 
 export async function resetPassword(req, res, next) {
   try {
@@ -248,6 +239,8 @@ export async function resetPassword(req, res, next) {
 
     await user.save();
 
+    // Password Updated
+    await sendOtpMail(user.email, "", "updatePassword", user.name);
     return sendResponse(res, 201, "Password updated successfully");
   } catch (err) {
     return next(err);

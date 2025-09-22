@@ -60,6 +60,8 @@ export const loginValidator = Joi.object({
   }),
 }).options({ allowUnknown: false }, { stripUnknown: true });
 
+// Forgot Password
+
 export const forgotPasswordValidator = Joi.object({
   email: Joi.string()
     .email({
@@ -72,6 +74,8 @@ export const forgotPasswordValidator = Joi.object({
       "any.required": "Email is required",
     }),
 }).options({ allowUnknown: false, stripUnknown: true });
+
+/// Reset Password
 
 export const resetPasswordValidator = Joi.object({
   email: Joi.string().email().required().messages({
@@ -86,4 +90,19 @@ export const resetPasswordValidator = Joi.object({
     "string.min": "Password must be at least 6 characters",
     "any.required": "Password is required",
   }),
+}).options({ allowUnknown: false, stripUnknown: true });
+
+// Forgot Password
+
+export const resendOtpValidator = Joi.object({
+  email: Joi.string()
+    .email({
+      minDomainSegments: 2,
+      tlds: { allow: ["com", "org", "hotmail", "yahoo"] },
+    })
+    .required()
+    .messages({
+      "string.email": "Invalid email format",
+      "any.required": "Email is required",
+    }),
 }).options({ allowUnknown: false, stripUnknown: true });

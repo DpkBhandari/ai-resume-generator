@@ -4,7 +4,11 @@ import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
+
+import { adminProtect } from "./middlewares/admin.middleware.js";
+import { authenticate } from "./middlewares/authorization.js";
 
 const app = express();
 
@@ -34,8 +38,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
-// ✅ API Routes
+// ✅ API Routes for Users
 app.use("/api/v1/users", userRoutes);
+// API Routes fro Admin
+
+app.use("/api/v1/admin", authenticate, adminProtect, adminRoutes);
 
 // ✅ Home Route
 app.get("/", (req, res) =>
