@@ -1,116 +1,113 @@
-# 🤖 AI-Powered Resume Generator
-
-## Create, Customize, and Download Professional Resumes with Ease ✨
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/DpkBhandari/ai-resume-generator.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/DpkBhandari/ai-resume-generator/stargazers/)
-
-An **intelligent Resume Builder** that leverages **modern Full Stack technologies** and **AI-powered suggestions** to help users craft standout, job-ready resumes in minutes.
+# User Management System 
+A simple **User Management System** built with Node.js, Express, MongoDB, and JWT for authentication.  
+Supports **user registration, login, email verification, password reset**, and basic **role-based access** for admin.
 
 ---
 
-## 🚀 Features
-- 🎨 **Beautiful UI** – Simple, clean, and user-friendly design  
-- 📄 **Multiple Templates** – Choose from sleek, modern, and professional resume templates  
-- 🤖 **AI Assistance** – Smart suggestions for **skills, job descriptions, and summaries**  
-- 🔐 **Authentication** – Secure login with **JWT or OAuth**  
-- 💾 **Resume Management** – Save, edit, and manage **multiple resumes** easily  
-- 📥 **Export to PDF** – Download resumes as polished, ready-to-share PDFs  
-- 🔍 **Search & Filter** – Find resumes by skills (for multi-user system)  
-- ☁️ **Cloud Ready** – Deployable to Vercel, Render, or Railway  
+## Features
+
+- ✅ User Registration with email verification  
+- ✅ User Login with JWT authentication  
+- ✅ Password Reset (Forgot Password)  
+- ✅ Resend OTP / Verification Code  
+- ✅ Role-based access for Admin (future use)  
+- ✅ Secure password hashing using bcryptjs  
+- ✅ Email notifications via Nodemailer (Gmail SMTP)
 
 ---
 
-## 🛠 Tech Stack
-**Frontend:** ⚛️ React, 🎨 Tailwind CSS  
-**Backend:** 🟢 Node.js, 🚀 Express.js  
-**Database:** 🍃 MongoDB (Atlas)  
-**Authentication:** 🔑 JWT / OAuth  
-**AI Integration:** 🤖 OpenAI API (or similar LLMs)  
-**PDF Generation:** 📝 Puppeteer / PDFKit  
-**Deployment:** ▲ Vercel (Frontend), ⚡ Render/Railway (Backend), ☁️ MongoDB Atlas  
+## Tech Stack
+
+- **Backend:** Node.js, Express.js  
+- **Database:** MongoDB (Mongoose ORM)  
+- **Authentication:** JWT, cookies  
+- **Email Service:** Nodemailer  
+- **Validation:** Joi
 
 ---
 
-## ⚡ Getting Started
+## API Endpoints
 
-### 1️⃣ Clone the repo
+### **User Routes**
+
+| Method | Endpoint                  | Description                         | Auth Required |
+|--------|---------------------------|-------------------------------------|---------------|
+| POST   | `/api/v1/users/register`  | Register a new user                  | ❌             |
+| POST   | `/api/v1/users/login`     | Login user                           | ❌             |
+| POST   | `/api/v1/users/verify`    | Verify email with OTP                | ❌             |
+| POST   | `/api/v1/users/forgot`    | Request password reset OTP           | ❌             |
+| POST   | `/api/v1/users/reset`     | Reset password using OTP             | ❌             |
+| POST   | `/api/v1/users/resendmail`| Resend verification OTP              | ❌             |
+| POST   | `/api/v1/users/logout`    | Logout user                          | ✅             |
+| GET    | `/api/v1/users/refresh`   | Refresh access token                 | ✅             |
+
+### **Admin Routes**
+
+| Method | Endpoint                  | Description                         | Auth Required |
+|--------|---------------------------|-------------------------------------|---------------|
+| GET    | `/api/v1/admin/users`     | Get all registered users             | ✅ (Admin)    |
+
+---
+
+## Installation
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/DpkBhandari/ai-resume-generator.git
-cd ai-resume-generator
+git clone https://github.com/yourusername/user-management-system.git
+cd user-management-system
+Install dependencies:```
 
-2️⃣ Install dependencies
-# Frontend
-cd client
+```bash
+Copy code
 npm install
+Setup environment variables (.env):```
 
-# Backend
-cd server
-npm install
+env
+Copy code
+PORT=8000
+MONGO_URI=mongodb://localhost:27017/userdb
+JWT_SECRET=your_jwt_secret
+EMAIL=your_email@gmail.com
+PASS_EMAIL=your_email_app_password
+NODE_ENV=development
+Start the server:
 
-3️⃣ Setup environment variables
-
-Create a .env file in server/ with:
-
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-OPENAI_API_KEY=your_openai_api_key
-
-4️⃣ Run locally
-# Frontend
-cd client
+bash
+Copy code
 npm run dev
+Usage
+Use Postman or Insomnia to test the API endpoints.
 
-# Backend
-cd server
-npm start
+Emails (OTP, welcome, password reset) will be sent via your configured Gmail SMTP.
 
-👨‍💻 Author
+Notes
+Password Hashing: bcryptjs
 
-Deepak Bhandari
-[🌐 LinkedIn](https://www.linkedin.com/in/deepak-bhandari-500467355/)
+Token Expiry:
 
-[💻 GitHub](https://github.com/DpkBhandari)
+Access Token: 15 minutes
 
-[📧 Email](code2deepak@gmail.com)
+Refresh Token: 7 days
 
-🤝 Contributing
+OTP Expiry: 15 minutes for registration/resend, 5 minutes for password reset
 
-Contributions are always welcome! 🚀
+Future Improvements
+Role-based access control with multiple roles (user, admin, moderator)
 
-Fork this repository
+User profile management (update info, avatar)
 
-Create your feature branch (feature/awesome-feature)
+Logging and monitoring admin actions
 
-Commit changes (git commit -m "Add some awesome feature")
+Rate limiting for login and OTP endpoints
 
-Push to the branch (git push origin feature/awesome-feature)
-
-Open a Pull Request 🎉
-
-*📜 License*
-
+License
 This project is licensed under the MIT License.
 
-🛣 Roadmap
-
-🔗 LinkedIn Import – Import data directly from LinkedIn
-
-🧠 AI Job Matching – Suggest jobs based on resume data
-
-🎨 More Templates – Expand library of professional resume templates
-
-🌍 Multi-language Support – Build resumes in multiple languages
-
-📊 Analytics Dashboard – Track which resume versions perform best
-
-⭐ If you like this project, don’t forget to star the repo on GitHub!
-
-
-This way your README looks **modern, polished, and attractive to recruiters or contributors**.  
-
-Do you want me to also add a **Demo section with placeholder screenshots/GIFs** so that your repo looks visually engaging even before you finish coding?
+yaml
+Copy code
 
 
 
+I can also make a **more compact “developer-friendly” version** with **example cURL requests for every endpoint** so anyone can test quickly without reading the code.  
 
-
+Do you want me to create that version too?
